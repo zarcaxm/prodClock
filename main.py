@@ -22,21 +22,23 @@ class TaskClock:
         self.stop_button.pack(pady=10)
 
         self.elapsed_time_label = tk.Label(
-            root, text="Elapsed time: 00:00:00", font=("Helvetica", 16))
+            root, text="00:00:00", font=("Helvetica", 16))
         self.elapsed_time_label.pack(pady=20)
 
     def start_timer(self):
         self.start_time = datetime.now()
+        self.running = True
         self.label.config(text="Timer is running...")
         self.start_button.config(state=tk.DISABLED)
-        self.stop_button(state=tk.NORMAL)
+        self.stop_button.config(state=tk.NORMAL)
         self.update_timer()
 
     def stop_timer(self):
+        self.running = False
         if self.start_time:
             elapsed_time = datetime.now() - self.start_time
             self.elapsed_time_label.config(
-                text=f"Elapsed time: {elapsed_time.total_seconds(): .2f} seconds")
+                text=f"{elapsed_time.total_seconds(): .2f} seconds")
             self.label.config(text="Press 'Start' to begin")
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
@@ -46,7 +48,7 @@ class TaskClock:
         if self.running:
             elapsed_time = datetime.now() - self.start_time
             self.elapsed_time_label.config(
-                text=f"Elapsed time: {str(elapsed_time).split('.')[0]}")
+                text=f"{str(elapsed_time).split('.')[0]}")
             self.root.after(1000, self.update_timer)
 
 
