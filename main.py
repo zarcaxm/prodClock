@@ -1,102 +1,64 @@
-import tkinter as tk
-from tkinter import ttk
-from datetime import datetime, timedelta
+from kivy.app import App
+from kivy.uix.label import Label
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
+from kivy.clock import Clock
+from datetime import datetime
 
 
-class TaskClock:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Track Task Clock")
+class TaskTimerApp(App):
+    def build(self):
         self.start_time = None
         self.running = False
-        self.task_name = None
+        self.time = 0
 
-        self.style = ttk.Style()
-        self.style.configure("TButton", font=("Helvetica", 14))
-        self.style.configure("TLabel", font=("Helvetica", 16))
+        self.layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
 
-        # Main Frame
-        self.main_frame = ttk.Frame(root, padding="10")
-        self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.task_input = TextInput(
+            hint_text='Enter task name', font_size='20sp', size_hint=(1, 0.1))
+        self.layout.add_widget(self.task_input)
 
-        # Task name label and entry
-        self.label = ttk.Label(
-            self.main_frame, text="Enter task name and press 'Start' to begin")
-        self.label.grid(row=0, column=0, columnspan=2, pady=10)
+        self.time_label = Label(text="00:00:00", font_size='40sp')
+        self.layout.add_widget(self.time_label)
 
-        self.task_entry = ttk.Entry(self.main_frame, font=("Helvetica", 14))
-        self.task_entry.grid(row=1, column=0, columnspan=2,
-                             pady=10, sticky=(tk.W, tk.E))
+        self.start_button = Button(
+            text="Start", font_size='20sp', size_hint=(1, 0.2))
+        self.start_button.bind(on_press=self.start_timer)
+        self.layout.add_widget(self.start_button)
 
-        # Start and stop buttons
-        self.start_button = ttk.Button(
-            self.main_frame, text="Start", command=self.start_timer)
-        self.start_button.grid(row=2, column=0, pady=10)
+        self.stop_button = Button(
+            text="Stop", font_size='20sp', size_hint=(1, 0.2), disabled=True)
+        self.stop_button.bind(on_press=self.stop_timer)
+        self.layout.add_widget(self.stop_button)
 
-        self.stop_button = ttk.Button(
-            self.main_frame, text="Stop", command=self.stop_timer, state=tk.DISABLED)
-        self.stop_button.grid(row=2, column=1, pady=10)
+        return self.layout
 
-        # Elapsed time label
-        self.elapsed_time_label = ttk.Label(self.main_frame, text="00:00:00")
-        self.elapsed_time_label.grid(row=3, column=0, columnspan=2, pady=20)
-
-        # Task label
-        self.task_label = ttk.Label(self.main_frame, text="")
-        self.task_label.grid(row=4, column=0, columnspan=2, pady=10)
-
-        # Configure grid weights
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
-        self.main_frame.grid_rowconfigure(1, weight=1)
-        self.main_frame.grid_columnconfigure(1, weight=1)
-
-    def start_timer(self):
-        self.task_name = self.task_entry.get()
+    def start_timer(self, instance):
+        self.task_name = self.task_input.text
         if self.task_name:
             self.start_time = datetime.now()
             self.running = True
-            self.label.pack_forget()
-            self.start_button.config(state=tk.DISABLED)
-            self.stop_button.config(state=tk.NORMAL)
-            self.task_label.config(state=tk.DISABLED)
-            self.task_entry.pack_forget()
-            self.task_label.config(text=f"Task: {self.task_name}")
-            self.update_timer()
-        else:
-            self.label.config(text="Task Name")
+            self.time = 0
+            self.start_button.disabled = True
+            self.stop_button.disabled = False
+            self.task_input.disabled = True
+            Clock.schedule_interval(self.update_time, 1)
 
-    def stop_timer(self):
+    def stop_timer(self, instance):
         self.running = False
-        if self.start_time:
-            elapsed_time = datetime.now() - self.start_time
-            hours, remainder = divmod(elapsed_time.total_seconds(), 3600)
-            minutes, seconds = divmod(remainder, 60)
-            self.elapsed_time_label.config(
-                text=f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-            )
-            self.label.config(
-                text="Enter task name and press 'Start' to begin")
-            self.label.grid()  # Show the label again
-            self.start_button.state(["!disabled"])  # Enable the start button
-            self.stop_button.state(["disabled"])  # Disable the stop button
-            self.task_entry.grid()  # Show the task entry again
-            self.task_entry.config(state=tk.NORMAL)
-            self.task_entry.delete(0, tk.END)  # Clear the entry field
-            self.start_time = None
-            self.task_label.config(text=f"Task: {self.task_name} completed")
+        self.start_button.disabled = False
+        self.stop_button.disabled = True
+        self.task_input.disabled = False
+        Clock.unschedule(self.update_time)
 
-    def update_timer(self):
+    def update_time(self, dt):
         if self.running:
-            elapsed_time = datetime.now() - self.start_time
-            hours, remainder = divmod(elapsed_time.total_seconds(), 3600)
+            self.time += 1
+            hours, remainder = divmod(self.time, 3600)
             minutes, seconds = divmod(remainder, 60)
-            self.elapsed_time_label.config(
-                text=f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}")
-            self.root.after(1000, self.update_timer)
+            self.time_label.text = f"{hours:02}:{minutes:02}:{seconds:02}"
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = TaskClock(root)
-    root.mainloop()
+if __name__ == '__main__':
+    TaskTimerApp().run()
